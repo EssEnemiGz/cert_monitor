@@ -3,3 +3,4 @@
 venv
 __pycache__/
 development.log
+db_data

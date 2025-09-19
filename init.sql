@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS domains (
+    id SERIAL PRIMARY KEY,
+    domain VARCHAR(255) UNIQUE NOT NULL,
+    creation_date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_domain ON domains(domain);
