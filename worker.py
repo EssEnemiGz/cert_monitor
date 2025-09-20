@@ -1,7 +1,7 @@
 from db_manager.db_network import DatabaseAdmin
+from functools import partial
 from dotenv import load_dotenv
 import logging
-import psycopg2
 import certstream
 import sys
 
@@ -16,22 +16,22 @@ logging.basicConfig(
     ]
 )
 
-def process_event(message, context):
+def process_event(conn, message, context):
     if message['message_type'] == "certificate_update":
         all_domains = message['data']['leaf_cert']['all_domains']
 
         try:
-            conn = DatabaseAdmin()
-
             if all_domains:
                 for domain in all_domains:
                     logging.info(f"Certificate found for: {domain}")
                     conn.save_domain(domain)
                     conn.commit()
 
-        except psycopg2.Error as e:
+        except Exception as e:
             logging.error(f"Database error while processing: {e}")
 
 if __name__ == "__main__":
     logging.info("Starting monitor worker...")
-    certstream.listen_for_events(process_event, url='wss://certstream.calidog.io/')
+    conn = DatabaseAdmin()
+    process_event_wrapper = partial(process_event, conn)
+    certstream.listen_for_events(process_event_wrapper, url='wss://certstream.calidog.io/')
