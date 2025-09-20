@@ -16,7 +16,7 @@ logging.basicConfig(
     ]
 )
 
-def process_event(conn, message, context):
+def process_event(db, message, context):
     if message['message_type'] == "certificate_update":
         all_domains = message['data']['leaf_cert']['all_domains']
 
@@ -24,14 +24,13 @@ def process_event(conn, message, context):
             if all_domains:
                 for domain in all_domains:
                     logging.info(f"Certificate found for: {domain}")
-                    conn.save_domain(domain)
-                    conn.commit()
+                    db.add_batch(domain)
 
         except Exception as e:
             logging.error(f"Database error while processing: {e}")
 
 if __name__ == "__main__":
     logging.info("Starting monitor worker...")
-    conn = DatabaseAdmin()
-    process_event_wrapper = partial(process_event, conn)
+    db = DatabaseAdmin()
+    process_event_wrapper = partial(process_event, db)
     certstream.listen_for_events(process_event_wrapper, url='wss://certstream.calidog.io/')
