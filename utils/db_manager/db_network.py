@@ -1,4 +1,6 @@
 from psycopg2.pool import ThreadedConnectionPool
+from concurrent.futures import ThreadPoolExecutor
+from utils.email_manager.email_sender import EmailMsg
 import psycopg2
 import logging
 import sys
@@ -7,8 +9,10 @@ import os
 class DatabaseAdmin:
     def __init__(self, batch_limit=100, min_conn=1, max_conn=20) -> None:
         self.batch = []
+        self.thousand_hundreds_domains = 0
         self.batch_limit = batch_limit
         self.pool: ThreadedConnectionPool
+
         try:
             self.pool = ThreadedConnectionPool(
                 min_conn,
@@ -39,6 +43,11 @@ class DatabaseAdmin:
 
         if len(self.batch) >= self.batch_limit:
             self.save_domains()
+            
+        if self.thousand_hundreds_domains >= 100_000:
+            with ThreadPoolExecutor(max_workers=1) as executor: # 1 worker is enough for now
+                email = EmailMsg()
+                executor.submit(email.sendAlert)
 
     def save_domains(self):
         logging.info("Commiting domains from batch")

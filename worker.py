@@ -1,4 +1,4 @@
-from db_manager.db_network import DatabaseAdmin
+from utils.db_manager.db_network import DatabaseAdmin
 from functools import partial
 from dotenv import load_dotenv
 import logging
