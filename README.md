@@ -71,4 +71,9 @@ The following environment variables are required to run the project. They should
 - `POSTGRES_PASSWORD`: The password for the database.
 - `POSTGRES_HOST`: The host of the database.
 - `POSTGRES_PORT`: The port of the database.
-
+- SMTP_SERVER_URL: The SMTP URL you will use (smtp.gmail.com, for example).
+- SMTP_SERVER_PORT: The SMTP access port.
+- SMTP_USER: The SMTP admin user.
+- SMTP_PASSW: The SMTP Password for user.
+- SMTP_ALIAS: The email you will use to send the alerts, must be the same email you used to log in if you don't have alias in your server.
+- SMTP_ADMIN_EMAIL: The email you will use to receive the alerts.
