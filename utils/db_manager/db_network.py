@@ -30,14 +30,6 @@ class DatabaseAdmin:
             logging.critical(f"Cannot connect to the database: {e}")
             sys.exit(1)
 
-    def commit(self) -> None:
-        conn = self.pool.getconn()
-        if not conn.closed:
-            conn.commit()
-        else:
-            logging.error("Connection is None, cannot commit changes.")
-            sys.exit(1)
-
     def add_batch(self, domain) -> None:
         if domain.startswith('*.') and len(domain) > 2:
             self.batch.append( (domain[2:],) )
@@ -45,6 +37,8 @@ class DatabaseAdmin:
         else:
             self.batch.append( (domain,) )
             logging.info(f"Added new domain on batch: {domain}")
+
+        self.thousand_hundreds_domains += 1
 
         if len(self.batch) >= self.batch_limit:
             self.storage_executor.submit(self.save_domains, self.batch.copy())
