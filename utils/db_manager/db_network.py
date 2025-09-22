@@ -7,7 +7,7 @@ import sys
 import os
 
 class DatabaseAdmin:
-    def __init__(self, batch_limit=1000, email_workers=1, storage_workers=10, min_conn=1, max_conn=10) -> None:
+    def __init__(self, batch_limit=100, email_workers=1, storage_workers=1, min_conn=1, max_conn=10) -> None:
         self.batch = []
         self.thousand_hundreds_domains = 0
         self.batch_limit = batch_limit
