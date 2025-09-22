@@ -31,6 +31,6 @@ def process_event(db, message, context):
 
 if __name__ == "__main__":
     logging.info("Starting monitor worker...")
-    db = DatabaseAdmin(batch_limit=100)
+    db = DatabaseAdmin(batch_limit=5000)
     process_event_wrapper = partial(process_event, db)
     certstream.listen_for_events(process_event_wrapper, url='wss://certstream.calidog.io/')

@@ -43,8 +43,7 @@ class DatabaseAdmin:
 
             if len(self.batch) >= self.batch_limit:
                 logging.info(f"Added {self.batch_limit} domains")
-                batch_to_save = self.batch
-                self.storage_executor.submit(self.save_domains, batch_to_save)
+                self.storage_executor.submit(self.save_domains, list(self.batch))
                 self.batch = []
 
             if self.thousand_hundreds_domains >= 100_000:
