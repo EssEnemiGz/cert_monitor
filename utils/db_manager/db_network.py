@@ -37,9 +37,8 @@ class DatabaseAdmin:
             sys.exit(1)
 
     def add_batch(self, domain) -> None:
-        if domain.startswith('*.') and len(domain) > 2:
-            self.batch.append( (domain[2:],) ) 
-            logging.info(f"Added new domain on batch: {domain[2:]}")
+        self.batch.append( (domain[2:],) ) 
+        logging.info(f"Added new domain on batch: {domain[2:]}")
 
         if len(self.batch) >= self.batch_limit:
             self.save_domains()
