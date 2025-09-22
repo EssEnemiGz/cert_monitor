@@ -1,6 +1,5 @@
 from psycopg2.pool import ThreadedConnectionPool
 from concurrent.futures import ThreadPoolExecutor
-from utils.email_manager import email_sender
 from utils.email_manager.email_sender import EmailMsg
 import threading
 import psycopg2
