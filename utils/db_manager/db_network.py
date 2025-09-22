@@ -1,6 +1,7 @@
 from psycopg2.pool import ThreadedConnectionPool
 from concurrent.futures import ThreadPoolExecutor
 from utils.email_manager.email_sender import EmailMsg
+import threading
 import psycopg2
 import logging
 import sys
@@ -11,6 +12,7 @@ class DatabaseAdmin:
         self.batch = []
         self.thousand_hundreds_domains = 0
         self.batch_limit = batch_limit
+        self.batch_lock = threading.Lock() # Lock for threads using batch
         self.pool: ThreadedConnectionPool
         self.email_executor = ThreadPoolExecutor(max_workers=email_workers)
         self.storage_executor = ThreadPoolExecutor(max_workers=storage_workers)
@@ -31,24 +33,25 @@ class DatabaseAdmin:
             sys.exit(1)
 
     def add_batch(self, domain) -> None:
-        if domain.startswith('*.') and len(domain) > 2:
-            self.batch.append( (domain[2:],) )
-            logging.info(f"Added new wildcard domain on batch: {domain[2:]}")
-        else:
-            self.batch.append( (domain,) )
-            logging.info(f"Added new domain on batch: {domain}")
+        with self.batch_lock:
+            if domain.startswith('*.') and len(domain) > 2:
+                self.batch.append( (domain[2:],) )
+                logging.info(f"Added new wildcard domain on batch: {domain[2:]}")
+            else:
+                self.batch.append( (domain,) )
+                logging.info(f"Added new domain on batch: {domain}")
 
-        self.thousand_hundreds_domains += 1
+            self.thousand_hundreds_domains += 1
 
-        if len(self.batch) >= self.batch_limit:
-            self.storage_executor.submit(self.save_domains, self.batch.copy())
-            self.batch.clear()
-            
-        if self.thousand_hundreds_domains >= 100_000:
-            with ThreadPoolExecutor(max_workers=1) as executor: # 1 worker is enough for now
-                email = EmailMsg()
-                executor.submit(email.sendAlert)
-                self.thousand_hundreds_domains = 0
+            if len(self.batch) >= self.batch_limit:
+                self.storage_executor.submit(self.save_domains, self.batch.copy())
+                self.batch.clear()
+
+            if self.thousand_hundreds_domains >= 100_000:
+                with ThreadPoolExecutor(max_workers=1) as executor: # 1 worker is enough for now
+                    email = EmailMsg()
+                    executor.submit(email.sendAlert)
+                    self.thousand_hundreds_domains = 0
 
     def save_domains(self, batch_list):
         logging.info("Commiting domains from batch")
