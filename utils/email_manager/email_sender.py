@@ -18,7 +18,7 @@ class EmailMsg:
 
         self.smtp_conn = self.connectToSMTP(smtp_usr=self.smtp_user, smtp_passw=self.smtp_passw)
 
-        self.body = "Added 100,000 new domains!"
+        self.body = "Added 1,000,000 new domains!"
 
     def connectToSMTP(self, *, smtp_usr: str, smtp_passw: str) -> smtplib.SMTP:
         try:

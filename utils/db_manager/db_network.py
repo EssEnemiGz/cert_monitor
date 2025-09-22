@@ -1,5 +1,6 @@
 from psycopg2.pool import ThreadedConnectionPool
 from concurrent.futures import ThreadPoolExecutor
+from utils.email_manager import email_sender
 from utils.email_manager.email_sender import EmailMsg
 import threading
 import psycopg2
@@ -10,7 +11,7 @@ import os
 class DatabaseAdmin:
     def __init__(self, batch_limit=100, email_workers=1, storage_workers=1, min_conn=1, max_conn=10) -> None:
         self.batch = []
-        self.thousand_hundreds_domains = 0
+        self.million_domains = 0
         self.batch_limit = batch_limit
         self.batch_lock = threading.Lock() # Lock for threads using batch
         self.pool: ThreadedConnectionPool
@@ -27,7 +28,7 @@ class DatabaseAdmin:
                 host=os.getenv("POSTGRES_HOST"),
                 port=os.getenv("POSTGRES_PORT")
             )
-            logging.info("Connected to the database")
+            logging.debug("Connected to the database")
         except psycopg2.OperationalError as e:
             logging.critical(f"Cannot connect to the database: {e}")
             sys.exit(1)
@@ -39,20 +40,24 @@ class DatabaseAdmin:
             else:
                 self.batch.append( (domain,) )
 
-            self.thousand_hundreds_domains += 1
+            self.million_domains += 1
 
             if len(self.batch) >= self.batch_limit:
-                logging.info(f"Added {self.batch_limit} domains")
+                logging.debug(f"Added {self.batch_limit} domains")
                 self.storage_executor.submit(self.save_domains, list(self.batch))
                 self.batch = []
 
-            if self.thousand_hundreds_domains >= 100_000:
-                email = EmailMsg()
-                self.email_executor.submit(email.sendAlert)
-                self.thousand_hundreds_domains = 0
+    def increase_counter(self, inserted_count) -> None:
+        logging.debug(f"Domains saved in the background. New domains added: {inserted_count}")
+        self.million_domains += inserted_count
+
+        if self.million_domains >= 1_000_000:
+            email = EmailMsg()
+            self.email_executor.submit(email.sendAlert)
+            self.million_domains = 0
 
     def save_domains(self, batch_list):
-        logging.info("Commiting domains from batch")
+        logging.debug("Commiting domains from batch")
         conn = self.pool.getconn()
         cursor = conn.cursor()
         try:
@@ -60,7 +65,10 @@ class DatabaseAdmin:
                 "INSERT INTO domains (domain) VALUES (%s) ON CONFLICT (domain) DO NOTHING;",
                 batch_list
             )
-            logging.info(f"Domains saved in the background.")
+            inserted_count = cursor.rowcount
+            with self.batch_lock:
+                self.increase_counter(inserted_count)
+                logging.debug(f"Domains saved in the background.")
 
             conn.commit()
         except psycopg2.Error as e:
