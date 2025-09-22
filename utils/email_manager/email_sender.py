@@ -18,8 +18,6 @@ class EmailMsg:
 
         self.smtp_conn = self.connectToSMTP(smtp_usr=self.smtp_user, smtp_passw=self.smtp_passw)
 
-        self.body = "Added 1,000,000 new domains!"
-
     def connectToSMTP(self, *, smtp_usr: str, smtp_passw: str) -> smtplib.SMTP:
         try:
             smtp_server_url = os.getenv("SMTP_SERVER_URL") or ""
@@ -60,5 +58,6 @@ class EmailMsg:
             logging.error(f"Failed sending mail: {e}")
             sys.exit(1)
 
-    def sendAlert(self) -> None: # Auxiliar function to made the alert more readable
-        self.sendMail(alias=self.smtp_alias, to_email=self.smtp_admin_email, body=self.body, subject="New domains added - Alert from cert_monitor", server=self.smtp_conn) 
+    def sendAlert(self, amount) -> None: # Auxiliar function to made the alert more readable
+        body = f"Added {amount} new domains!"
+        self.sendMail(alias=self.smtp_alias, to_email=self.smtp_admin_email, body=body, subject="New domains added - Alert from cert_monitor", server=self.smtp_conn) 

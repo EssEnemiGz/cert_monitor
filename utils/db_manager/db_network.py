@@ -8,14 +8,15 @@ import sys
 import os
 
 class DatabaseAdmin:
-    def __init__(self, batch_limit=100, email_workers=1, storage_workers=1, min_conn=1, max_conn=10) -> None:
+    def __init__(self, batch_limit=100, email_workers=1, storage_workers=1, min_conn=1, max_conn=10, email_alert_amount=10_000_000) -> None:
         self.batch = []
-        self.million_domains = 0
+        self.domains_counter = 0
         self.batch_limit = batch_limit
-        self.batch_lock = threading.Lock() # Lock for threads using batch
+        self.batch_lock = threading.Lock()
         self.pool: ThreadedConnectionPool
         self.email_executor = ThreadPoolExecutor(max_workers=email_workers)
         self.storage_executor = ThreadPoolExecutor(max_workers=storage_workers)
+        self.email_alert_amount = email_alert_amount
 
         try:
             self.pool = ThreadedConnectionPool(
@@ -39,7 +40,7 @@ class DatabaseAdmin:
             else:
                 self.batch.append( (domain,) )
 
-            self.million_domains += 1
+            self.domains_counter += 1
 
             if len(self.batch) >= self.batch_limit:
                 logging.debug(f"Added {self.batch_limit} domains")
@@ -48,12 +49,12 @@ class DatabaseAdmin:
 
     def increase_counter(self, inserted_count) -> None:
         logging.debug(f"Domains saved in the background. New domains added: {inserted_count}")
-        self.million_domains += inserted_count
+        self.domains_counter += inserted_count
 
-        if self.million_domains >= 1_000_000:
+        if self.domains_counter >= self.email_alert_amount:
             email = EmailMsg()
-            self.email_executor.submit(email.sendAlert)
-            self.million_domains = 0
+            self.email_executor.submit(email.sendAlert, self.email_alert_amount)
+            self.domains_counter = 0
 
     def save_domains(self, batch_list):
         logging.debug("Commiting domains from batch")
