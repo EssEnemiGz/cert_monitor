@@ -7,11 +7,13 @@ import sys
 import os
 
 class DatabaseAdmin:
-    def __init__(self, batch_limit=100, min_conn=1, max_conn=20) -> None:
+    def __init__(self, batch_limit=1000, email_workers=1, storage_workers=10, min_conn=1, max_conn=10) -> None:
         self.batch = []
         self.thousand_hundreds_domains = 0
         self.batch_limit = batch_limit
         self.pool: ThreadedConnectionPool
+        self.email_executor = ThreadPoolExecutor(max_workers=email_workers)
+        self.storage_executor = ThreadPoolExecutor(max_workers=storage_workers)
 
         try:
             self.pool = ThreadedConnectionPool(
@@ -45,21 +47,22 @@ class DatabaseAdmin:
             logging.info(f"Added new domain on batch: {domain}")
 
         if len(self.batch) >= self.batch_limit:
-            self.save_domains()
+            self.storage_executor.submit(self.save_domains, self.batch.copy())
+            self.batch.clear()
             
         if self.thousand_hundreds_domains >= 100_000:
             with ThreadPoolExecutor(max_workers=1) as executor: # 1 worker is enough for now
                 email = EmailMsg()
                 executor.submit(email.sendAlert)
 
-    def save_domains(self):
+    def save_domains(self, batch_list):
         logging.info("Commiting domains from batch")
         conn = self.pool.getconn()
         cursor = conn.cursor()
         try:
             cursor.executemany(
                 "INSERT INTO domains (domain) VALUES (%s) ON CONFLICT (domain) DO NOTHING;",
-                self.batch
+                batch_list
             )
             logging.info(f"Domains saved in the background.")
 
@@ -72,5 +75,3 @@ class DatabaseAdmin:
                 cursor.close()
             if conn:
                 self.pool.putconn(conn)
-
-            self.batch = []
