@@ -56,7 +56,6 @@ class EmailMsg:
         try:
             msg = self.createMail(alias=alias, to_email=to_email, body=body, subject=subject)
             server.sendmail(alias, to_email, msg.as_string())
-            server.quit()
         except Exception as e:
             logging.error(f"Failed sending mail: {e}")
             sys.exit(1)
