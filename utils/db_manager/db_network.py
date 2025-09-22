@@ -1,6 +1,7 @@
 from psycopg2.pool import ThreadedConnectionPool
 from concurrent.futures import ThreadPoolExecutor
 from utils.email_manager.email_sender import EmailMsg
+from psycopg2.extras import execute_values
 import threading
 import psycopg2
 import logging
@@ -48,12 +49,11 @@ class DatabaseAdmin:
                 self.batch = []
 
     def increase_counter(self, inserted_count) -> None:
-        logging.debug(f"Domains saved in the background. New domains added: {inserted_count}")
         self.domains_counter += inserted_count
 
         if self.domains_counter >= self.email_alert_amount:
             email = EmailMsg()
-            self.email_executor.submit(email.sendAlert, self.email_alert_amount)
+            self.email_executor.submit(email.sendAlert, self.email_alert_amount, self.domains_counter)
             self.domains_counter = 0
 
     def save_domains(self, batch_list):
@@ -61,14 +61,14 @@ class DatabaseAdmin:
         conn = self.pool.getconn()
         cursor = conn.cursor()
         try:
-            cursor.executemany(
-                "INSERT INTO domains (domain) VALUES (%s) ON CONFLICT (domain) DO NOTHING;",
+            execute_values(
+                cursor,
+                "INSERT INTO domains (domain) VALUES %s ON CONFLICT (domain) DO NOTHING RETURNING id;",
                 batch_list
             )
-            inserted_count = cursor.rowcount
             with self.batch_lock:
+                inserted_count = len(cursor.fetchall())
                 self.increase_counter(inserted_count)
-                logging.debug(f"Domains saved in the background.")
 
             conn.commit()
         except psycopg2.Error as e:

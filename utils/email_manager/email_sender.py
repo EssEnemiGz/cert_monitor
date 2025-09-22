@@ -58,6 +58,6 @@ class EmailMsg:
             logging.error(f"Failed sending mail: {e}")
             sys.exit(1)
 
-    def sendAlert(self, amount) -> None: # Auxiliar function to made the alert more readable
-        body = f"Added {amount} new domains!"
+    def sendAlert(self, proccesed_domains: int, added_domains: int) -> None: # Auxiliar function to made the alert more readable
+        body = f"Added {added_domains} new domains and processed {proccesed_domains} domains"
         self.sendMail(alias=self.smtp_alias, to_email=self.smtp_admin_email, body=body, subject="New domains added - Alert from cert_monitor", server=self.smtp_conn) 
