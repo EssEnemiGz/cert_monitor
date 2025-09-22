@@ -48,6 +48,7 @@ class DatabaseAdmin:
             with ThreadPoolExecutor(max_workers=1) as executor: # 1 worker is enough for now
                 email = EmailMsg()
                 executor.submit(email.sendAlert)
+                self.thousand_hundreds_domains = 0
 
     def save_domains(self, batch_list):
         logging.info("Commiting domains from batch")
