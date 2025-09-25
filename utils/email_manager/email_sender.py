@@ -53,7 +53,16 @@ class EmailMsg:
     def sendMail(self, *, alias: str, to_email: str, body: str, subject: str, server: smtplib.SMTP) -> None:
         try:
             msg = self.createMail(alias=alias, to_email=to_email, body=body, subject=subject)
+
+            if server.noop()[0] == 250:
+                server.sendmail(alias, to_email, msg.as_string())
+
+        except (smtplib.SMTPServerDisconnected, OSError):
+            logging.warning("Conexión SMTP inactiva. Recreando...")
+            server = self.connectToSMTP(smtp_usr=self.smtp_user, smtp_passw=self.smtp_passw)
+            msg = self.createMail(alias=alias, to_email=to_email, body=body, subject=subject)
             server.sendmail(alias, to_email, msg.as_string())
+
         except Exception as e:
             logging.error(f"Failed sending mail: {e}")
             sys.exit(1)
