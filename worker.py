@@ -8,7 +8,7 @@ import sys
 load_dotenv()
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("development.log"),
