@@ -8,7 +8,7 @@ import sys
 load_dotenv()
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("development.log"),
@@ -31,6 +31,6 @@ def process_event(db, message, context):
 
 if __name__ == "__main__":
     logging.info("Starting monitor worker...")
-    db = DatabaseAdmin(batch_limit=25000)
+    db = DatabaseAdmin(batch_limit=10000)
     process_event_wrapper = partial(process_event, db)
     certstream.listen_for_events(process_event_wrapper, url='wss://certstream.calidog.io/')
