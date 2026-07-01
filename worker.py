@@ -17,8 +17,8 @@ logging.basicConfig(
 )
 
 def process_event(db, message, context):
-    if message['message_type'] == "certificate_update":
-        all_domains = message['data']['leaf_cert']['all_domains']
+    if 'd' in message:
+        all_domains = message['d']
 
         try:
             if all_domains:
@@ -33,4 +33,4 @@ if __name__ == "__main__":
     logging.info("Starting monitor worker...")
     db = DatabaseAdmin(batch_limit=10000)
     process_event_wrapper = partial(process_event, db)
-    certstream.listen_for_events(process_event_wrapper, url='wss://certstream.calidog.io/')
+    certstream.listen_for_events(process_event_wrapper, url='ws://127.0.0.1:4000')
