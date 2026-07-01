@@ -24,6 +24,7 @@ def process_event(db, message, context):
             if all_domains:
                 for domain in all_domains:
                     logging.debug(f"Certificate found for: {domain}")
+                    domain = domain.strip().lower()
                     db.add_batch(domain)
 
         except Exception as e:

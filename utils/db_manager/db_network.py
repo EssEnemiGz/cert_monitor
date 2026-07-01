@@ -65,12 +65,13 @@ class DatabaseAdmin:
         try:
             execute_values(
                 cursor,
-                "INSERT INTO domains (domain) VALUES %s ON CONFLICT (domain) DO NOTHING RETURNING id;",
+                "INSERT INTO domains (domain) VALUES %s ON CONFLICT (domain) DO NOTHING;",
                 batch_list
             )
+            inserted_count = cursor.rowcount
             with self.batch_lock:
-                inserted_count = len(cursor.fetchall())
                 self.increase_counter(inserted_count)
+            logging.info(f"Agregados: {inserted_count}")
 
             conn.commit()
         except psycopg2.Error as e:
